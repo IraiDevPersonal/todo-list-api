@@ -1,0 +1,21 @@
+# .gitignore
+node_modules/
+dist/
+coverage/
+*.config.js
+*.config.ts
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+Thumbs.db
+
+
+# Ignorar archivos de bloqueo de todos los gestores de paquetes
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lock
+
+/generated/prisma
