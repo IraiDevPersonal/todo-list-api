@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { TaskRoutes } from "./modules/tasks/routes";
 
 export class AppRouter {
   static get routes(): Router {
@@ -13,6 +14,8 @@ export class AppRouter {
         timestamp: currentDate.toISOString(),
       });
     });
+
+    router.use("/api/v1", TaskRoutes.routes);
 
     return router;
   }
