@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:latest
-    container_name: NOMBRE_DB-postgres-db
+    container_name: todo-db-postgres
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
