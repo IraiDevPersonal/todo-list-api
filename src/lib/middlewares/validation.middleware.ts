@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import type z from "zod";
 import { ResponseController } from "../controllers/response.controller";
 import { SchemaException } from "../exceptions/schema.exception";
+import { logger } from "../logger";
 
 export class ValidationMiddleware {
   static validateRequest = (schemas: {
@@ -29,7 +30,7 @@ export class ValidationMiddleware {
 
         if (SchemaException.isSchemaException(error)) {
           const errorMessage = SchemaException.getExceptionMessage(error);
-          console.error({
+          logger.error({
             source: "ValidationMiddleware/validateRequest",
             message: errorMessage,
             error,

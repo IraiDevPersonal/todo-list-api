@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Todo List</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss"></style>
+  </head>
+  <body class="bg-neutral-900 text-neutral-50">
+    <main class="flex flex-col gap-4">
+      <header class="w-full p-4">
+        <h1 class="text-4xl font-bold">Todo List - Web Socket</h1>
+      </header>
+      <div class="px-8 w-4xl mx-auto space-y-4">
+        <form id="task-form" class="flex gap-2 w-full items-end">
+          <div class="w-1/3">
+            <label for="form-task-title" class="text-sm mb-1 block"
+              >Título</label
+            >
+            <input
+              required
+              autofocus
+              type="text"
+              name="title"
+              maxlength="100"
+              placeholder="Título"
+              class="py-1.5 px-2.5 rounded-lg border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500 w-full"
+            />
+          </div>
+          <div class="flex-1">
+            <label for="form-task-description" class="text-sm mb-1 block"
+              >Descripción</label
+            >
+            <input
+              type="text"
+              maxlength="500"
+              name="description"
+              placeholder="Descripción"
+              class="py-1.5 px-2.5 rounded-lg border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500 w-full"
+            />
+          </div>
+          <button
+            type="submit"
+            class="py-1.5 px-2.5 border border-transparent rounded-lg bg-green-500 hover:bg-green-600 font-semibold transition-colors cursor-pointer w-max min-w-max"
+          >
+            Agregar Tarea
+          </button>
+        </form>
+        <h2 class="text-2xl font-semibold" id="tasks-title">Tareas</h2>
+        <ul id="tasks" class="divide-y divide-neutral-600"></ul>
+      </div>
+    </main>
+
+    <script>
+      const API_URL = window.location.origin;
+      const socket = io(API_URL);
+
+      const taskForm = document.getElementById("task-form");
+      taskForm.onsubmit = createNewTask;
+
+      socket.on("connect", async () => {
+        console.log("Conectado al servidor");
+        await loadTasks();
+        updateTitleTasksCountToDom();
+      });
+
+      socket.on("task:created", (task) => {
+        addTaskToDOM(task, true);
+        updateTitleTasksCountToDom();
+      });
+
+      socket.on("task:updated", (task) => {
+        updateTaskInDOM(task);
+      });
+
+      socket.on("task:toggle_status", (data) => {
+        updateTaskStatus(data.id, data.status);
+      });
+
+      socket.on("task:deleted", async (id) => {
+        await removeTaskFromDOM(id);
+        updateTitleTasksCountToDom();
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Desconectado del servidor");
+      });
+
+      async function loadTasks() {
+        try {
+          const response = await fetch(`${API_URL}/api/v1/tasks`);
+          const result = await response.json();
+          const tasksDiv = document.getElementById("tasks");
+          tasksDiv.innerHTML = "";
+
+          if (result.data) {
+            result.data.forEach((task) => {
+              addTaskToDOM(task);
+            });
+          }
+        } catch (error) {
+          console.error("Error al cargar tareas:", error);
+        }
+      }
+
+      async function handleCheckboxChange(event) {
+        const checkbox = event.target;
+        const taskId = checkbox.id.replace("checkbox-", "");
+        const data = {
+          id: taskId,
+          status: checkbox.checked ? "complete" : "pending",
+        };
+
+        try {
+          await fetch(`${API_URL}/api/v1/tasks/${data.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: data.status }),
+          });
+        } catch (error) {
+          console.error("Error actualizando estado:", error);
+        }
+      }
+
+      async function handleDeleteTask(id) {
+        const taskElement = document.getElementById(`task-${id}`);
+        const title = taskElement.querySelector("h3").textContent ?? "";
+        const isConfirmed = confirm(
+          `¿Estás seguro de eliminar la tarea: "${title}"?`
+        );
+
+        if (!isConfirmed) return;
+
+        try {
+          await fetch(`${API_URL}/api/v1/tasks/${id}`, {
+            method: "DELETE",
+          });
+        } catch (error) {
+          console.error("Error eliminando tarea:", error);
+        }
+      }
+
+      async function createNewTask(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const values = Object.fromEntries(formData.entries());
+
+        try {
+          await fetch(`${API_URL}/api/v1/tasks`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(values),
+          });
+          taskForm?.reset();
+          taskForm?.querySelector('input[name="title"]').focus();
+        } catch (error) {
+          console.error("Error creando tarea:", error);
+        }
+      }
+
+      function updateTitleTasksCountToDom() {
+        const tasksList = document.getElementById("tasks");
+        const tasksTitle = document.getElementById("tasks-title");
+        tasksTitle.textContent = `Tareas (${tasksList.children.length})`;
+      }
+
+      function addTaskToDOM(task, insertAtStart = false) {
+        const tasksList = document.getElementById("tasks");
+        const taskElement = document.createElement("li");
+
+        taskElement.id = `task-${task.id}`;
+        taskElement.className = "flex items-center gap-4 p-2";
+        taskElement.innerHTML = `
+          <input
+            type="checkbox"
+            name="status"
+            id="checkbox-${task.id}"
+            class="cursor-pointer accent-green-500"
+          />
+          <div class="text-sm w-full">
+            <h3 class="font-semibold text-lg">${task.title}</h3>
+            <p
+              class="text-neutral-400 ${
+                task.status === "complete" ? "line-through" : ""
+              }"
+            >
+              ${task.description || ""}
+            </p>
+            <span>Estado: ${
+              task.status === "complete" ? "Completada" : "Pendiente"
+            }</span>
+          </div>
+          <button
+            class="text-neutral-400 p-1.5 cursor-pointer hover:text-green-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        `;
+
+        taskElement.querySelector("input").checked = task.status === "complete";
+        taskElement
+          .querySelector("input")
+          .addEventListener("change", handleCheckboxChange);
+        taskElement
+          .querySelector("button")
+          .addEventListener("click", () => handleDeleteTask(task.id));
+        insertAtStart
+          ? tasksList.insertBefore(taskElement, tasksList.firstChild)
+          : tasksList.appendChild(taskElement);
+      }
+
+      function updateTaskStatus(id, status) {
+        const taskElement = document.getElementById(`task-${id}`);
+        if (taskElement) {
+          const statusSpan = taskElement.querySelector("span");
+          const description = taskElement.querySelector("p");
+          if (statusSpan) {
+            statusSpan.textContent = `Estado: ${
+              status === "complete" ? "Completada" : "Pendiente"
+            }`;
+            taskElement.querySelector("input").checked = status === "complete";
+          }
+          if (description) {
+            description.classList.toggle("line-through", status === "complete");
+          }
+        }
+      }
+
+      function removeTaskFromDOM(id) {
+        const taskElement = document.getElementById(`task-${id}`);
+        if (taskElement) taskElement.remove();
+      }
+    </script>
+  </body>
+</html>

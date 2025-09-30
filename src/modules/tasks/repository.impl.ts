@@ -1,9 +1,9 @@
 import type { Prisma, Task } from "@prisma/client";
 import { DbClient } from "@/lib/db-client";
 import { DbException } from "@/lib/exceptions/db.exception";
-import type { CreateTaskModel } from "../models/create-task.model";
-import type { ToggleTaskStatusModel } from "../models/toggle-task-status.model";
-import type { TaskRepository } from "./task.respository";
+import type { CreateTaskModel } from "./models/create-task.model";
+import type { ToggleTaskStatusModel } from "./models/toggle-task-status.model";
+import type { TaskRepository } from "./respository";
 
 export class TaskRepositoryImpl extends DbClient implements TaskRepository {
   private readonly taskSelector: Prisma.TaskSelect = {
@@ -17,9 +17,12 @@ export class TaskRepositoryImpl extends DbClient implements TaskRepository {
 
   getTasks = async (): Promise<Task[]> => {
     try {
-      return await this.db.task.findMany({ select: this.taskSelector });
+      return await this.db.task.findMany({
+        select: this.taskSelector,
+        orderBy: { createdAt: "desc" },
+      });
     } catch (error) {
-      throw DbException.getException(error, "Failed to get tasks");
+      throw DbException.getException(error, "Database connection error");
     }
   };
 
@@ -27,7 +30,7 @@ export class TaskRepositoryImpl extends DbClient implements TaskRepository {
     try {
       await this.db.task.delete({ where: { id } });
     } catch (error) {
-      throw DbException.getException(error, "Failed to delete task");
+      throw DbException.getException(error, "Database connection error");
     }
   };
 
@@ -41,7 +44,7 @@ export class TaskRepositoryImpl extends DbClient implements TaskRepository {
         select: this.taskSelector,
       });
     } catch (error) {
-      throw DbException.getException(error, "Failed to create task");
+      throw DbException.getException(error, "Database connection error");
     }
   };
 
@@ -56,7 +59,7 @@ export class TaskRepositoryImpl extends DbClient implements TaskRepository {
         select: this.taskSelector,
       });
     } catch (error) {
-      throw DbException.getException(error, "Failed to toggle task status");
+      throw DbException.getException(error, "Database connection error");
     }
   };
 }
