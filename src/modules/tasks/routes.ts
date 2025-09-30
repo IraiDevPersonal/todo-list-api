@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ValidationMiddleware } from "@/lib/middlewares/validation.middleware";
 import { IdParamSchema } from "@/lib/schemas/shared";
 import { TaskController } from "./controller";
-import { TaskRepositoryImpl } from "./repositories/task.repository.impl";
+import { TaskRepositoryImpl } from "./repository.impl";
 import { CreateTaskSchema } from "./schemas/create-task-schema";
 import { ToggleTaskStatusSchema } from "./schemas/toggle-task-status.schema";
 

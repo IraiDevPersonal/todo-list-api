@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
 import { ResponseController } from "@/lib/controllers/response.controller";
 import { Exception } from "@/lib/exceptions/exception";
+import { logger } from "@/lib/logger";
 import { TaskMapper } from "./mapper";
-import type { TaskRepository } from "./repositories/task.respository";
+import { SocketEvents } from "./models/task-socket-envents.model";
+import type { TaskRepository } from "./respository";
 
 export class TaskController {
   private readonly repository: TaskRepository;
@@ -21,7 +23,7 @@ export class TaskController {
         error,
         "Failed to get tasks"
       );
-      console.log({
+      logger.error({
         source: "TaskController/getTasks",
         message,
         error,
@@ -33,14 +35,19 @@ export class TaskController {
   createTask = async (req: Request, res: Response) => {
     const responseController = new ResponseController(res);
     try {
-      const task = await this.repository.createTask(req.body);
-      responseController.json({ data: TaskMapper.fromDbToDomain(task) });
+      const payload = req.body;
+      const task = await this.repository.createTask(payload);
+      const newTask = TaskMapper.fromDbToDomain(task);
+
+      req.io?.emit(SocketEvents.TASK_CREATED, newTask);
+
+      responseController.json({ data: newTask });
     } catch (error) {
       const { message, statusCode } = Exception.getExceptionData(
         error,
         "Failed to create task"
       );
-      console.log({
+      logger.error({
         source: "TaskController/createTask",
         message,
         error,
@@ -50,17 +57,22 @@ export class TaskController {
   };
 
   toggleTaskStatus = async (req: Request, res: Response) => {
-    const taskId = req.params.id;
+    const taskId = req.params.id!;
     const responseController = new ResponseController(res);
     try {
-      const task = await this.repository.toggleTaskStatus(taskId!, req.body);
-      responseController.json({ data: TaskMapper.fromDbToDomain(task) });
+      const payload = req.body;
+      const task = await this.repository.toggleTaskStatus(taskId, payload);
+      const updateTask = TaskMapper.fromDbToDomain(task);
+
+      req.io?.emit(SocketEvents.TASK_TOGGLE_STATUS, updateTask);
+
+      responseController.json({ data: updateTask });
     } catch (error) {
       const { message, statusCode } = Exception.getExceptionData(
         error,
         "Failed to toggle task status"
       );
-      console.log({
+      logger.error({
         source: "TaskController/toggleTaskStatus",
         message,
         error,
@@ -70,17 +82,20 @@ export class TaskController {
   };
 
   deleteTask = async (req: Request, res: Response) => {
-    const taskId = req.params.id;
+    const taskId = req.params.id!;
     const responseController = new ResponseController(res);
     try {
-      await this.repository.deleteTask(taskId!);
+      await this.repository.deleteTask(taskId);
+
+      req.io?.emit(SocketEvents.TASK_DELETED, taskId);
+
       responseController.noContent();
     } catch (error) {
       const { message, statusCode } = Exception.getExceptionData(
         error,
         "Failed to delete task"
       );
-      console.log({
+      logger.error({
         source: "TaskController/deleteTask",
         message,
         error,
