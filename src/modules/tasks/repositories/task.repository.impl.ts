@@ -3,9 +3,9 @@ import { DbClient } from "@/lib/db-client";
 import { DbException } from "@/lib/exceptions/db.exception";
 import type { CreateTaskModel } from "../models/create-task.model";
 import type { ToggleTaskStatusModel } from "../models/toggle-task-status.model";
-import type { TasksRepository } from "./task.respository";
+import type { TaskRepository } from "./task.respository";
 
-export class TaskRepositoryImpl extends DbClient implements TasksRepository {
+export class TaskRepositoryImpl extends DbClient implements TaskRepository {
   private readonly taskSelector: Prisma.TaskSelect = {
     id: true,
     title: true,
@@ -33,7 +33,13 @@ export class TaskRepositoryImpl extends DbClient implements TasksRepository {
 
   createTask = async (payload: CreateTaskModel): Promise<Task> => {
     try {
-      return await this.db.task.create({ data: payload, select: this.taskSelector });
+      return await this.db.task.create({
+        data: {
+          title: payload.title,
+          description: payload.description ?? null,
+        },
+        select: this.taskSelector,
+      });
     } catch (error) {
       throw DbException.getException(error, "Failed to create task");
     }

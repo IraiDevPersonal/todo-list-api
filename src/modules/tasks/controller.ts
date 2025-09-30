@@ -2,12 +2,12 @@ import type { Request, Response } from "express";
 import { ResponseController } from "@/lib/controllers/response.controller";
 import { Exception } from "@/lib/exceptions/exception";
 import { TaskMapper } from "./mapper";
-import type { TaskRepositoryImpl } from "./repositories/task.repository.impl";
+import type { TaskRepository } from "./repositories/task.respository";
 
 export class TaskController {
-  private readonly repository: TaskRepositoryImpl;
+  private readonly repository: TaskRepository;
 
-  constructor(repository: TaskRepositoryImpl) {
+  constructor(repository: TaskRepository) {
     this.repository = repository;
   }
 
