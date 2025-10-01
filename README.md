@@ -2,21 +2,6 @@
 
 API REST para gestión de tareas (Todo List) con notificaciones en tiempo real mediante WebSockets. Desarrollada con Node.js, Express, TypeScript, PostgreSQL, Prisma ORM y Socket.io.
 
-## 📋 Tabla de Contenidos
-
-- [Características](#características)
-- [Tecnologías Utilizadas](#tecnologías-utilizadas)
-- [Requisitos Previos](#requisitos-previos)
-- [Configuración del Entorno](#configuración-del-entorno)
-- [Instalación de Dependencias](#instalación-de-dependencias)
-- [Configuración de Base de Datos](#configuración-de-base-de-datos)
-- [Ejecución de la Aplicación](#ejecución-de-la-aplicación)
-- [API REST - Endpoints](#api-rest---endpoints)
-- [WebSockets - Eventos](#websockets---eventos)
-- [Cómo Probar la Funcionalidad WebSocket](#cómo-probar-la-funcionalidad-websocket)
-- [Decisiones de Diseño](#decisiones-de-diseño)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-
 ## ✨ Características
 
 - ✅ CRUD completo de tareas (Crear, Leer, Actualizar estado, Eliminar)
